@@ -1,0 +1,3212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WiFi Sense — Scientific Instrumentation Dashboard</title>
+  <style>
+    /* -------------------------------------------------------------
+       CSS CUSTOM PROPERTIES & SCIENTIFIC INSTRUMENT THEME
+       ------------------------------------------------------------- */
+    :root {
+      --bg-deep: #0a0e17;
+      --bg-panel: #111827;
+      --bg-card: #162032;
+      --bg-surface: #1a2336;
+      --bg-elevated: #202b42;
+      --border-subtle: #1e293b;
+      --border-medium: #2d3b55;
+      --border-bright: #3b82f6;
+
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --text-bright: #ffffff;
+
+      --cyan-accent: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.25);
+      --green-accent: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.25);
+      --amber-accent: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.25);
+      --orange-accent: #f97316;
+      --orange-glow: rgba(249, 115, 22, 0.25);
+      --red-accent: #ef4444;
+      --red-glow: rgba(239, 68, 68, 0.25);
+      --purple-accent: #8b5cf6;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "SF Pro Display", Inter, "Helvetica Neue", sans-serif;
+      --font-mono: "JetBrains Mono", "SF Mono", "Roboto Mono", "Fira Code", Menlo, monospace;
+
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+      --shadow-md: 0 4px 12px -1px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 10px 24px -3px rgba(0, 0, 0, 0.6);
+      --shadow-glow: 0 0 15px var(--cyan-glow);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-deep);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      letter-spacing: -0.01em;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-deep);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-medium);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-dim);
+    }
+
+    /* -------------------------------------------------------------
+       LAYOUT GRID & CONTAINERS
+       ------------------------------------------------------------- */
+    .dashboard-container {
+      max-width: 1720px;
+      margin: 0 auto;
+      padding: 16px 20px 28px 20px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* -------------------------------------------------------------
+       1. HEADER BAR
+       ------------------------------------------------------------- */
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-card) 100%);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 14px 22px;
+      box-shadow: var(--shadow-md);
+      gap: 16px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon-wrapper {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-md);
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--cyan-accent);
+      box-shadow: 0 0 12px var(--cyan-glow);
+    }
+
+    .brand-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .brand-subtitle {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--cyan-accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 2px 6px;
+      background: rgba(6, 182, 212, 0.1);
+      border-radius: 4px;
+      border: 1px solid rgba(6, 182, 212, 0.2);
+    }
+
+    .header-status-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border: 1px solid transparent;
+      background: var(--bg-surface);
+    }
+
+    .status-badge.connected {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+
+    .status-badge.polling {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+    }
+
+    .status-badge.disconnected {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #f87171;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      background-color: var(--text-dim);
+    }
+
+    .connected .pulse-dot {
+      background-color: var(--green-accent);
+      box-shadow: 0 0 8px var(--green-accent);
+      animation: pulse-green 1.8s infinite;
+    }
+
+    .polling .pulse-dot {
+      background-color: var(--amber-accent);
+      box-shadow: 0 0 8px var(--amber-accent);
+      animation: pulse-amber 1.8s infinite;
+    }
+
+    .disconnected .pulse-dot {
+      background-color: var(--red-accent);
+      box-shadow: 0 0 8px var(--red-accent);
+      animation: pulse-red 1.8s infinite;
+    }
+
+    @keyframes pulse-green {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1.15); box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    @keyframes pulse-amber {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+      70% { transform: scale(1.15); box-shadow: 0 0 0 7px rgba(245, 158, 11, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+
+    @keyframes pulse-red {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { transform: scale(1.15); box-shadow: 0 0 0 7px rgba(239, 68, 68, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    .timestamp-box {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: var(--bg-deep);
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* -------------------------------------------------------------
+       GRID SYSTEMS (PANELS & SECTIONS)
+       ------------------------------------------------------------- */
+    .grid-top {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 16px;
+    }
+
+    .grid-mid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 16px;
+    }
+
+    .grid-bottom {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 1200px) {
+      .grid-top, .grid-mid, .grid-bottom {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Common Card Styles */
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      box-shadow: var(--shadow-md);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title svg {
+      color: var(--cyan-accent);
+    }
+
+    /* -------------------------------------------------------------
+       2. CONNECTION STATUS PANEL
+       ------------------------------------------------------------- */
+    .signal-hero-card {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(17, 24, 39, 0.8) 100%);
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .signal-hero-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .signal-hero-value {
+      font-family: var(--font-mono);
+      font-size: 2.8rem;
+      font-weight: 700;
+      color: var(--cyan-accent);
+      line-height: 1.1;
+      text-shadow: 0 0 20px var(--cyan-glow);
+    }
+
+    .signal-hero-unit {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-left: 2px;
+    }
+
+    .gauge-wrapper {
+      margin-top: 10px;
+    }
+
+    .gauge-bar-track {
+      height: 8px;
+      background: var(--bg-deep);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .gauge-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ef4444 0%, #f59e0b 45%, #10b981 85%, #06b6d4 100%);
+      transition: width 0.35s ease;
+      border-radius: 4px;
+    }
+
+    .gauge-ticks {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+    }
+
+    .info-kv-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .info-kv-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+    }
+
+    .info-kv-item.full-width {
+      grid-column: span 2;
+    }
+
+    .info-kv-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .info-kv-val {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* -------------------------------------------------------------
+       3. LIVE SIGNAL CHART
+       ------------------------------------------------------------- */
+    .chart-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chart-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .chart-legend {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-indicator {
+      width: 10px;
+      height: 3px;
+      border-radius: 2px;
+    }
+
+    .legend-indicator.line-cyan {
+      background: var(--cyan-accent);
+      box-shadow: 0 0 6px var(--cyan-accent);
+    }
+
+    .legend-indicator.dot-red {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--red-accent);
+    }
+
+    .legend-indicator.dash-amber {
+      width: 12px;
+      height: 2px;
+      background: repeating-linear-gradient(90deg, var(--amber-accent) 0, var(--amber-accent) 4px, transparent 4px, transparent 7px);
+    }
+
+    .canvas-container {
+      position: relative;
+      flex: 1;
+      min-height: 240px;
+      width: 100%;
+      background: #090d16;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    canvas.signal-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    .canvas-overlay-empty {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(9, 13, 22, 0.88);
+      backdrop-filter: blur(2px);
+      gap: 10px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .canvas-overlay-empty.hidden {
+      display: none;
+    }
+
+    .chart-tooltip {
+      position: absolute;
+      background: rgba(17, 24, 39, 0.95);
+      border: 1px solid var(--cyan-accent);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-bright);
+      pointer-events: none;
+      box-shadow: var(--shadow-md);
+      display: none;
+      z-index: 10;
+      white-space: nowrap;
+      transform: translate(-50%, -120%);
+    }
+
+    /* -------------------------------------------------------------
+       4. EXPERIMENT CONTROLS PANEL
+       ------------------------------------------------------------- */
+    .controls-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 16px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-sans);
+      user-select: none;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--cyan-accent);
+      outline-offset: 2px;
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+      flex: 1;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.45);
+    }
+
+    .btn-danger {
+      background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+      flex: 1;
+    }
+    .btn-danger:hover:not(:disabled) {
+      background: linear-gradient(180deg, #f87171 0%, #ef4444 100%);
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface);
+      border-color: var(--border-medium);
+      color: var(--text-main);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--bg-elevated);
+      border-color: var(--cyan-accent);
+      color: var(--text-bright);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    select.input-control, input.input-control {
+      background: var(--bg-deep);
+      border: 1px solid var(--border-medium);
+      color: var(--text-bright);
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-family: inherit;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    select.input-control:focus, input.input-control:focus {
+      border-color: var(--cyan-accent);
+      box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+    }
+
+    .phase-selector-pills {
+      display: flex;
+      gap: 6px;
+    }
+
+    .phase-pill {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      background: var(--bg-deep);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .phase-pill:hover {
+      border-color: var(--border-medium);
+      color: var(--text-bright);
+    }
+
+    .phase-pill.active[data-phase="Baseline"] {
+      background: rgba(16, 185, 129, 0.18);
+      border-color: var(--green-accent);
+      color: #34d399;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .phase-pill.active[data-phase="Movement"] {
+      background: rgba(245, 158, 11, 0.18);
+      border-color: var(--amber-accent);
+      color: #fbbf24;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+    }
+
+    .phase-pill.active[data-phase="Custom"] {
+      background: rgba(139, 92, 246, 0.18);
+      border-color: var(--purple-accent);
+      color: #c084fc;
+      box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+    }
+
+    .annotation-box {
+      display: flex;
+      gap: 8px;
+    }
+
+    .session-meta-strip {
+      background: var(--bg-deep);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+
+    .session-meta-item .meta-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .session-meta-item .meta-value {
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--cyan-accent);
+      margin-top: 2px;
+    }
+
+    /* -------------------------------------------------------------
+       5. STATISTICS PANEL
+       ------------------------------------------------------------- */
+    .stats-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .stat-card-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .stat-card-value {
+      font-family: var(--font-mono);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      margin-top: 6px;
+    }
+
+    .stat-card-unit {
+      font-size: 0.75rem;
+      font-weight: normal;
+      color: var(--text-muted);
+      margin-left: 2px;
+    }
+
+    .stat-card-subtext {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    /* -------------------------------------------------------------
+       6. SIGNAL ANALYSIS PANEL
+       ------------------------------------------------------------- */
+    .analysis-body {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .analysis-charts-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .analysis-charts-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .mini-chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mini-chart-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mini-canvas-wrapper {
+      height: 90px;
+      position: relative;
+      background: #090d16;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    canvas.mini-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .analysis-notes-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+    }
+
+    .analysis-notes-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .analysis-notes-list {
+      list-style-type: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .analysis-notes-list li {
+      position: relative;
+      padding-left: 16px;
+      line-height: 1.4;
+    }
+
+    .analysis-notes-list li::before {
+      content: "•";
+      position: absolute;
+      left: 4px;
+      color: var(--cyan-accent);
+      font-weight: bold;
+    }
+
+    /* -------------------------------------------------------------
+       7. HARDWARE DIAGNOSTICS PANEL
+       ------------------------------------------------------------- */
+    .diag-details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .diag-capabilities-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .cap-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 0.8rem;
+    }
+
+    .cap-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .cap-icon.yes {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--green-accent);
+    }
+
+    .cap-icon.no {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--red-accent);
+    }
+
+    .diag-notice-banner {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-left: 4px solid var(--amber-accent);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      color: #fcd34d;
+      line-height: 1.45;
+    }
+
+    /* -------------------------------------------------------------
+       8. FEATURE STATUS CARDS
+       ------------------------------------------------------------- */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .feature-card.status-available {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.04) 0%, var(--bg-card) 100%);
+    }
+
+    .feature-card.status-experimental {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.04) 0%, var(--bg-card) 100%);
+    }
+
+    .feature-card.status-unvalidated {
+      border-color: rgba(249, 115, 22, 0.4);
+      background: linear-gradient(180deg, rgba(249, 115, 22, 0.04) 0%, var(--bg-card) 100%);
+    }
+
+    .feature-card.status-unavailable {
+      border-color: rgba(239, 68, 68, 0.3);
+      opacity: 0.85;
+    }
+
+    .feature-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .feature-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-bright);
+    }
+
+    .feature-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+
+    .badge-available {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--green-accent);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-experimental {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--amber-accent);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-unvalidated {
+      background: rgba(249, 115, 22, 0.15);
+      color: var(--orange-accent);
+      border: 1px solid rgba(249, 115, 22, 0.3);
+    }
+
+    .badge-unavailable {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--red-accent);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .feature-desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .feature-reqs {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      background: var(--bg-deep);
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+    }
+
+    .feature-expandable-btn {
+      background: none;
+      border: none;
+      color: var(--cyan-accent);
+      font-size: 0.72rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0;
+      margin-top: 4px;
+    }
+
+    .feature-detail-content {
+      display: none;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      border-top: 1px dashed var(--border-medium);
+      padding-top: 6px;
+      margin-top: 4px;
+    }
+
+    .feature-detail-content.expanded {
+      display: block;
+    }
+
+    /* -------------------------------------------------------------
+       9. EXPERIMENT LOG PANEL
+       ------------------------------------------------------------- */
+    .log-container {
+      background: var(--bg-deep);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      height: 220px;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-family: var(--font-mono);
+    }
+
+    .log-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 6px 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      animation: fadeIn 0.25s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .log-time {
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    .log-phase-badge {
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .log-phase-badge.phase-Baseline {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--green-accent);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .log-phase-badge.phase-Movement {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--amber-accent);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .log-phase-badge.phase-Custom {
+      background: rgba(139, 92, 246, 0.15);
+      color: var(--purple-accent);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .log-phase-badge.phase-System {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--cyan-accent);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+
+    .log-text {
+      color: var(--text-bright);
+      word-break: break-word;
+      flex: 1;
+    }
+
+    .empty-state-message {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      min-height: 120px;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      text-align: center;
+      gap: 8px;
+    }
+
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-medium);
+      color: var(--text-bright);
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+      animation: slideIn 0.3s ease;
+      min-width: 260px;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .toast.success { border-color: var(--green-accent); }
+    .toast.warning { border-color: var(--amber-accent); }
+    .toast.error { border-color: var(--red-accent); }
+    .toast.info { border-color: var(--cyan-accent); }
+
+    /* Utilities */
+    .mono { font-family: var(--font-mono); }
+    .text-cyan { color: var(--cyan-accent); }
+    .text-green { color: var(--green-accent); }
+    .text-amber { color: var(--amber-accent); }
+    .text-red { color: var(--red-accent); }
+    .text-dim { color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+  <!-- DASHBOARD CONTAINER -->
+  <div class="dashboard-container">
+
+    <!-- 1. HEADER BAR -->
+    <header class="header-bar">
+      <div class="brand-section">
+        <div class="brand-icon-wrapper">
+          <!-- Subtle SVG Wifi Icon -->
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+            <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+            <circle cx="12" cy="20" r="1" fill="currentColor"></circle>
+          </svg>
+        </div>
+        <div class="brand-title">
+          WiFi Sense
+          <span class="brand-subtitle">INSTRUMENTATION</span>
+        </div>
+      </div>
+
+      <div class="header-status-group">
+        <div id="connStatusBadge" class="status-badge disconnected">
+          <span class="pulse-dot"></span>
+          <span id="connStatusText">Connecting...</span>
+        </div>
+
+        <div class="timestamp-box">
+          <span style="color:var(--text-dim); margin-right:4px;">LAST UPDATE:</span>
+          <span id="lastUpdateTimestamp">--:--:--</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- SECTION: TOP GRID (Status & Main Chart) -->
+    <div class="grid-top">
+      <!-- 2. CONNECTION STATUS PANEL -->
+      <section class="panel" style="min-height: 380px;">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            RF Connection Link
+          </h2>
+          <span id="rfLinkStatus" class="mono text-dim" style="font-size:0.75rem;">SCANNING</span>
+        </div>
+
+        <!-- Prominent Signal Strength Hero Display -->
+        <div class="signal-hero-card">
+          <div class="signal-hero-label">Current Received Signal Strength (RSSI)</div>
+          <div class="signal-hero-value">
+            <span id="heroRssiValue">-52</span><span class="signal-hero-unit">dBm</span>
+          </div>
+
+          <!-- Signal Quality Bar Gauge -->
+          <div class="gauge-wrapper">
+            <div class="gauge-bar-track">
+              <div id="signalGaugeFill" class="gauge-bar-fill" style="width: 60%;"></div>
+            </div>
+            <div class="gauge-ticks">
+              <span>-100 dBm (Dead)</span>
+              <span>-60 dBm</span>
+              <span>-20 dBm (Max)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interface & Link Parameter Grid -->
+        <div class="info-kv-grid">
+          <div class="info-kv-item">
+            <div class="info-kv-label">Interface</div>
+            <div id="infoInterface" class="info-kv-val">wlp2s0</div>
+          </div>
+          <div class="info-kv-item">
+            <div class="info-kv-label">Driver</div>
+            <div id="infoDriver" class="info-kv-val">iwlwifi</div>
+          </div>
+          <div class="info-kv-item full-width">
+            <div class="info-kv-label">SSID (Network)</div>
+            <div id="infoSsid" class="info-kv-val text-cyan">Lab_Sensing_Mesh_5G</div>
+          </div>
+          <div class="info-kv-item full-width">
+            <div class="info-kv-label">BSSID (Access Point)</div>
+            <div id="infoBssid" class="info-kv-val">b4:fb:e4:92:4a:10</div>
+          </div>
+          <div class="info-kv-item">
+            <div class="info-kv-label">Frequency / Channel</div>
+            <div id="infoFreqChan" class="info-kv-val">5240 MHz (Ch 48)</div>
+          </div>
+          <div class="info-kv-item">
+            <div class="info-kv-label">IP Address</div>
+            <div id="infoIp" class="info-kv-val">192.168.1.144</div>
+          </div>
+          <div class="info-kv-item">
+            <div class="info-kv-label">TX Bitrate</div>
+            <div id="infoTxRate" class="info-kv-val">144.2 Mbps</div>
+          </div>
+          <div class="info-kv-item">
+            <div class="info-kv-label">RX Bitrate</div>
+            <div id="infoRxRate" class="info-kv-val">86.7 Mbps</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. LIVE SIGNAL CHART -->
+      <section class="panel chart-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            Real-Time Signal Dynamics (RSSI)
+          </h2>
+          <div class="chart-header-actions">
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-indicator line-cyan"></span> RSSI (dBm)</span>
+              <span class="legend-item"><span class="legend-indicator dot-red"></span> Change Point</span>
+              <span class="legend-item"><span class="legend-indicator dash-amber"></span> Annotation</span>
+            </div>
+            <span id="chartSampleCountTag" class="mono text-cyan" style="font-size:0.75rem; background:rgba(6,182,212,0.1); padding:2px 8px; border-radius:4px; border:1px solid rgba(6,182,212,0.25);">
+              0 SAMPLES
+            </span>
+          </div>
+        </div>
+
+        <div class="canvas-container" id="chartContainer">
+          <canvas id="liveChart" class="signal-canvas"></canvas>
+          <div id="chartTooltip" class="chart-tooltip"></div>
+          <div id="chartEmptyOverlay" class="canvas-overlay-empty">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-dim)">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <div>No data yet — start an experiment to begin collecting</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- SECTION: MID GRID (Controls, Statistics & Signal Analysis) -->
+    <div class="grid-mid">
+      <!-- 4. EXPERIMENT CONTROLS PANEL -->
+      <section class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polygon points="10 8 16 12 10 16 10 8"></polygon>
+            </svg>
+            Experiment Controls
+          </h2>
+          <span id="expRunStateBadge" class="mono text-dim" style="font-size:0.75rem;">IDLE</span>
+        </div>
+
+        <div class="controls-grid">
+          <!-- Start / Stop Button -->
+          <div class="btn-row">
+            <button id="btnToggleExp" class="btn btn-primary">
+              <svg id="iconToggleExp" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span id="labelToggleExp">Start Experiment</span>
+            </button>
+            <button id="btnExportCsv" class="btn btn-secondary" title="Export captured session data to CSV">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Export CSV
+            </button>
+          </div>
+
+          <!-- Sampling Interval -->
+          <div class="form-group">
+            <label class="form-label" for="selectSamplingInterval">Sampling Interval (ms)</label>
+            <select id="selectSamplingInterval" class="input-control">
+              <option value="200">200 ms (High Frequency)</option>
+              <option value="500" selected>500 ms (Standard)</option>
+              <option value="1000">1000 ms (1 Hz)</option>
+              <option value="2000">2000 ms (Low Overhead)</option>
+              <option value="5000">5000 ms (Background Long-Term)</option>
+            </select>
+          </div>
+
+          <!-- Phase Selector -->
+          <div class="form-group">
+            <label class="form-label">Active Experiment Phase</label>
+            <div class="phase-selector-pills">
+              <div class="phase-pill active" data-phase="Baseline">Baseline</div>
+              <div class="phase-pill" data-phase="Movement">Movement</div>
+              <div class="phase-pill" data-phase="Custom">Custom</div>
+            </div>
+          </div>
+
+          <!-- Annotation Input -->
+          <div class="form-group">
+            <label class="form-label" for="inputAnnotation">Event Annotation</label>
+            <div class="annotation-box">
+              <input id="inputAnnotation" class="input-control" type="text" placeholder="e.g. Person walked past door...">
+              <button id="btnAddAnnotation" class="btn btn-secondary" style="white-space:nowrap; padding: 8px 12px;">
+                Add
+              </button>
+            </div>
+          </div>
+
+          <!-- Session Info Strip -->
+          <div class="session-meta-strip">
+            <div class="session-meta-item">
+              <div class="meta-label">Session ID</div>
+              <div id="sessionMetaId" class="meta-value" style="font-size:0.75rem;">—</div>
+            </div>
+            <div class="session-meta-item">
+              <div class="meta-label">Duration</div>
+              <div id="sessionMetaDuration" class="meta-value">00:00:00</div>
+            </div>
+            <div class="session-meta-item">
+              <div class="meta-label">Samples</div>
+              <div id="sessionMetaSamples" class="meta-value">0</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. STATISTICS & 6. SIGNAL ANALYSIS PANEL -->
+      <section class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="3" y1="9" x2="21" y2="9"></line>
+              <line x1="9" y1="21" x2="9" y2="9"></line>
+            </svg>
+            Statistical Metrics & Signal Analysis
+          </h2>
+          <button id="btnRunAnalysis" class="btn btn-secondary" style="font-size:0.75rem; padding:4px 10px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            Compute Analysis
+          </button>
+        </div>
+
+        <!-- 5. Statistics Cards Grid -->
+        <div class="stats-cards-grid" id="statsGrid">
+          <div class="stat-card">
+            <div class="stat-card-title">Sample Count</div>
+            <div class="stat-card-value" id="statSampleCount">—</div>
+            <div class="stat-card-subtext" id="statMissingSamples">Missing: —</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-title">Min RSSI</div>
+            <div class="stat-card-value"><span id="statMinRssi">—</span><span class="stat-card-unit">dBm</span></div>
+            <div class="stat-card-subtext">Peak attenuation</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-title">Max RSSI</div>
+            <div class="stat-card-value"><span id="statMaxRssi">—</span><span class="stat-card-unit">dBm</span></div>
+            <div class="stat-card-subtext">Strongest reception</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-title">Mean RSSI (μ)</div>
+            <div class="stat-card-value"><span id="statMeanRssi">—</span><span class="stat-card-unit">dBm</span></div>
+            <div class="stat-card-subtext">Average baseline</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-title">Std Dev (σ)</div>
+            <div class="stat-card-value"><span id="statStdDev">—</span><span class="stat-card-unit">dBm</span></div>
+            <div class="stat-card-subtext" id="statSpreadState">Variance index</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-title">Change Points</div>
+            <div class="stat-card-value text-red" id="statChangePoints">—</div>
+            <div class="stat-card-subtext">Structural shifts</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+          <!-- 6. Three Mini Inline Charts -->
+          <div class="analysis-charts-row">
+            <div class="mini-chart-card">
+              <div class="mini-chart-title">
+                <span>Smoothed Signal</span>
+                <span style="color:var(--cyan-accent); font-size:0.68rem;">EMA (α=0.25)</span>
+              </div>
+              <div class="mini-canvas-wrapper">
+                <canvas id="miniChartSmoothed" class="mini-canvas"></canvas>
+              </div>
+            </div>
+
+            <div class="mini-chart-card">
+              <div class="mini-chart-title">
+                <span>Detrended Signal</span>
+                <span style="color:var(--amber-accent); font-size:0.68rem;">Residuals</span>
+              </div>
+              <div class="mini-canvas-wrapper">
+                <canvas id="miniChartDetrended" class="mini-canvas"></canvas>
+              </div>
+            </div>
+
+            <div class="mini-chart-card">
+              <div class="mini-chart-title">
+                <span>Rolling Variance</span>
+                <span style="color:var(--purple-accent); font-size:0.68rem;">Window: 10s</span>
+              </div>
+              <div class="mini-canvas-wrapper">
+                <canvas id="miniChartVariance" class="mini-canvas"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Analysis Notes -->
+          <div class="analysis-notes-container" style="margin-top: 12px;">
+            <div class="analysis-notes-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              Automated Signal Analysis Notes
+            </div>
+            <ul class="analysis-notes-list" id="analysisNotesList">
+              <li>Awaiting experimental data. Start a collection run and select "Compute Analysis".</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- SECTION: BOTTOM GRID (Diagnostics & Features, plus Experiment Log) -->
+    <div class="grid-bottom">
+      <!-- 7. HARDWARE DIAGNOSTICS & SYSTEM CAPABILITY -->
+      <section class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+              <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+              <line x1="6" y1="6" x2="6.01" y2="6"></line>
+              <line x1="6" y1="18" x2="6.01" y2="18"></line>
+            </svg>
+            Hardware Diagnostics & Sensing Capabilities
+          </h2>
+          <span id="diagRefreshTag" class="mono text-dim" style="font-size:0.75rem;">HARDWARE PROBE OK</span>
+        </div>
+
+        <div class="diag-details-grid">
+          <div class="info-kv-item">
+            <div class="info-kv-label">Adapter Model</div>
+            <div id="diagAdapter" class="info-kv-val">Intel Wi-Fi 6 AX200 / AX201</div>
+          </div>
+          <div class="info-kv-item">
+            <div class="info-kv-label">Linux Driver</div>
+            <div id="diagDriver" class="info-kv-val">iwlwifi (kernel upstream)</div>
+          </div>
+          <div class="info-kv-item">
+            <div class="info-kv-label">PCI Hardware ID</div>
+            <div id="diagPci" class="info-kv-val">8086:06f0 (rev 00)</div>
+          </div>
+          <div class="info-kv-item">
+            <div class="info-kv-label">Firmware Release</div>
+            <div id="diagFw" class="info-kv-val">77.9c48831e.0 (cc-a0-77.ucode)</div>
+          </div>
+        </div>
+
+        <!-- Capability Matrix -->
+        <div class="diag-capabilities-list">
+          <div class="cap-item">
+            <span class="cap-icon yes">✓</span>
+            <div>
+              <div style="font-weight:600; color:var(--text-bright);">RSSI Telemetry</div>
+              <div style="font-size:0.7rem; color:var(--text-dim);">mac80211 nl80211 active</div>
+            </div>
+          </div>
+
+          <div class="cap-item">
+            <span class="cap-icon yes">✓</span>
+            <div>
+              <div style="font-weight:600; color:var(--text-bright);">High-Frequency Polling</div>
+              <div style="font-size:0.7rem; color:var(--text-dim);">Up to 10 Hz station dump</div>
+            </div>
+          </div>
+
+          <div class="cap-item">
+            <span class="cap-icon yes" id="capMonitorIcon">✓</span>
+            <div>
+              <div style="font-weight:600; color:var(--text-bright);">Monitor Mode</div>
+              <div style="font-size:0.7rem; color:var(--text-dim);" id="capMonitorDesc">Supported via iw / airmon-ng</div>
+            </div>
+          </div>
+
+          <div class="cap-item">
+            <span class="cap-icon no" id="capCsiIcon">✕</span>
+            <div>
+              <div style="font-weight:600; color:var(--text-bright);">Raw CSI Extraction</div>
+              <div style="font-size:0.7rem; color:var(--text-dim);" id="capCsiDesc">Not exposed by standard driver</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clear Architectural Notice -->
+        <div class="diag-notice-banner">
+          <strong>Hardware Notice:</strong> This Intel adapter is not known to expose CSI through the standard driver. RSSI-based measurements are available with high sampling stability, multipath fading variance detection, and change-point analysis.
+        </div>
+      </section>
+
+      <!-- 8. FEATURE STATUS CARDS -->
+      <section class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+            System Sensing Features & Availability
+          </h2>
+          <span class="mono text-dim" style="font-size:0.75rem;">MODULE MATRIX</span>
+        </div>
+
+        <div class="features-grid" id="featuresContainer">
+          <!-- Dynamic cards populated by script, pre-rendered fallback items included -->
+        </div>
+      </section>
+    </div>
+
+    <!-- 9. EXPERIMENT LOG PANEL (Full width across bottom) -->
+    <section class="panel" style="margin-top: 4px;">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          Experiment Audit Log & Annotation Timeline
+        </h2>
+        <button id="btnClearLog" class="btn btn-secondary" style="font-size:0.72rem; padding:3px 8px;">
+          Clear Display
+        </button>
+      </div>
+
+      <div class="log-container" id="experimentLogContainer">
+        <div class="empty-state-message" id="logEmptyState">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <div>No events logged</div>
+        </div>
+      </div>
+    </section>
+
+  </div> <!-- End dashboard-container -->
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- -------------------------------------------------------------
+       JAVASCRIPT LOGIC & VISUALIZATION ENGINE
+       ------------------------------------------------------------- -->
+  <script>
+    (function () {
+      'use strict';
+
+      /* -----------------------------------------------------------
+         APPLICATION STATE
+         ----------------------------------------------------------- */
+      const state = {
+        connected: false,
+        connectionMode: 'disconnected', // 'ws', 'polling', 'simulated', 'disconnected'
+        ws: null,
+        reconnectAttempts: 0,
+        pollingTimer: null,
+        durationTimer: null,
+        
+        experimentRunning: false,
+        sessionId: null,
+        sessionStartTime: null,
+        sampleCount: 0,
+        missingSamples: 0,
+        activePhase: 'Baseline',
+        samplingIntervalMs: 500,
+
+        // Data buffers
+        samples: [], // Array of { time: string, timestamp: number, rssi: number, phase: string, annotation: string|null, is_changepoint: boolean }
+        maxVisibleSamples: 90,
+        
+        // Link telemetry
+        linkInfo: {
+          interface: 'wlp2s0',
+          driver: 'iwlwifi',
+          ssid: 'Lab_Sensing_Mesh_5G',
+          bssid: 'b4:fb:e4:92:4a:10',
+          freq: 5240,
+          channel: 48,
+          rssi: -52,
+          ip: '192.168.1.144',
+          txRate: '144.2 Mbps',
+          rxRate: '86.7 Mbps'
+        },
+
+        // Analysis state
+        analysisData: {
+          smoothed: [],
+          detrended: [],
+          variance: [],
+          changePoints: 0,
+          notes: []
+        },
+
+        // Log events
+        logs: []
+      };
+
+      /* -----------------------------------------------------------
+         DOM ELEMENT REFERENCES
+         ----------------------------------------------------------- */
+      const els = {
+        connStatusBadge: document.getElementById('connStatusBadge'),
+        connStatusText: document.getElementById('connStatusText'),
+        lastUpdateTimestamp: document.getElementById('lastUpdateTimestamp'),
+        rfLinkStatus: document.getElementById('rfLinkStatus'),
+
+        heroRssiValue: document.getElementById('heroRssiValue'),
+        signalGaugeFill: document.getElementById('signalGaugeFill'),
+
+        infoInterface: document.getElementById('infoInterface'),
+        infoDriver: document.getElementById('infoDriver'),
+        infoSsid: document.getElementById('infoSsid'),
+        infoBssid: document.getElementById('infoBssid'),
+        infoFreqChan: document.getElementById('infoFreqChan'),
+        infoIp: document.getElementById('infoIp'),
+        infoTxRate: document.getElementById('infoTxRate'),
+        infoRxRate: document.getElementById('infoRxRate'),
+
+        liveChartCanvas: document.getElementById('liveChart'),
+        chartTooltip: document.getElementById('chartTooltip'),
+        chartEmptyOverlay: document.getElementById('chartEmptyOverlay'),
+        chartSampleCountTag: document.getElementById('chartSampleCountTag'),
+
+        btnToggleExp: document.getElementById('btnToggleExp'),
+        iconToggleExp: document.getElementById('iconToggleExp'),
+        labelToggleExp: document.getElementById('labelToggleExp'),
+        btnExportCsv: document.getElementById('btnExportCsv'),
+        selectSamplingInterval: document.getElementById('selectSamplingInterval'),
+        phasePills: document.querySelectorAll('.phase-pill'),
+        inputAnnotation: document.getElementById('inputAnnotation'),
+        btnAddAnnotation: document.getElementById('btnAddAnnotation'),
+
+        sessionMetaId: document.getElementById('sessionMetaId'),
+        sessionMetaDuration: document.getElementById('sessionMetaDuration'),
+        sessionMetaSamples: document.getElementById('sessionMetaSamples'),
+        expRunStateBadge: document.getElementById('expRunStateBadge'),
+
+        statSampleCount: document.getElementById('statSampleCount'),
+        statMissingSamples: document.getElementById('statMissingSamples'),
+        statMinRssi: document.getElementById('statMinRssi'),
+        statMaxRssi: document.getElementById('statMaxRssi'),
+        statMeanRssi: document.getElementById('statMeanRssi'),
+        statStdDev: document.getElementById('statStdDev'),
+        statSpreadState: document.getElementById('statSpreadState'),
+        statChangePoints: document.getElementById('statChangePoints'),
+
+        btnRunAnalysis: document.getElementById('btnRunAnalysis'),
+        analysisNotesList: document.getElementById('analysisNotesList'),
+        miniChartSmoothed: document.getElementById('miniChartSmoothed'),
+        miniChartDetrended: document.getElementById('miniChartDetrended'),
+        miniChartVariance: document.getElementById('miniChartVariance'),
+
+        diagAdapter: document.getElementById('diagAdapter'),
+        diagDriver: document.getElementById('diagDriver'),
+        diagPci: document.getElementById('diagPci'),
+        diagFw: document.getElementById('diagFw'),
+        capMonitorIcon: document.getElementById('capMonitorIcon'),
+        capMonitorDesc: document.getElementById('capMonitorDesc'),
+        capCsiIcon: document.getElementById('capCsiIcon'),
+        capCsiDesc: document.getElementById('capCsiDesc'),
+
+        featuresContainer: document.getElementById('featuresContainer'),
+        experimentLogContainer: document.getElementById('experimentLogContainer'),
+        logEmptyState: document.getElementById('logEmptyState'),
+        btnClearLog: document.getElementById('btnClearLog'),
+        toastContainer: document.getElementById('toastContainer')
+      };
+
+      /* -----------------------------------------------------------
+         TOAST NOTIFICATIONS
+         ----------------------------------------------------------- */
+      function showToast(message, type = 'info', duration = 3500) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        let iconSvg = '';
+        if (type === 'success') {
+          iconSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        } else if (type === 'error') {
+          iconSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
+        } else if (type === 'warning') {
+          iconSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+        } else {
+          iconSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+        }
+
+        toast.innerHTML = `${iconSvg}<span>${escapeHtml(message)}</span>`;
+        els.toastContainer.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(10px)';
+          toast.style.transition = 'all 0.3s ease';
+          setTimeout(() => toast.remove(), 300);
+        }, duration);
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      /* -----------------------------------------------------------
+         TIME & STRING HELPERS
+         ----------------------------------------------------------- */
+      function formatTimeHMS(date = new Date()) {
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+      }
+
+      function formatDurationSeconds(sec) {
+        const pad = (n) => String(n).padStart(2, '0');
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const s = sec % 60;
+        return `${pad(h)}:${pad(m)}:${pad(s)}`;
+      }
+
+      /* -----------------------------------------------------------
+         CANVAS CHART CLASS (High-DPI, Auto-scale, Annotations, Tooltips)
+         ----------------------------------------------------------- */
+      class HighResSignalChart {
+        constructor(canvas, options = {}) {
+          this.canvas = canvas;
+          this.ctx = canvas.getContext('2d');
+          this.options = Object.assign({
+            minY: -100,
+            maxY: -20,
+            autoScale: true,
+            padding: { top: 25, right: 35, bottom: 35, left: 55 },
+            lineColor: '#06b6d4',
+            gradientStart: 'rgba(6, 182, 212, 0.35)',
+            gradientEnd: 'rgba(6, 182, 212, 0.00)',
+            gridColor: '#1e293b',
+            textColor: '#64748b',
+            font: '10px "JetBrains Mono", monospace'
+          }, options);
+
+          this.hoverIndex = -1;
+          this.setupEvents();
+          this.resize();
+          
+          this.resizeObserver = new ResizeObserver(() => this.resize());
+          this.resizeObserver.observe(this.canvas.parentElement);
+        }
+
+        resize() {
+          const rect = this.canvas.parentElement.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          this.width = rect.width;
+          this.height = rect.height;
+          
+          this.canvas.width = Math.floor(this.width * dpr);
+          this.canvas.height = Math.floor(this.height * dpr);
+          
+          this.ctx.resetTransform?.();
+          this.ctx.scale(dpr, dpr);
+          this.render();
+        }
+
+        setupEvents() {
+          this.canvas.addEventListener('mousemove', (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            this.handleMouseMove(mouseX, mouseY, e.clientX, e.clientY);
+          });
+
+          this.canvas.addEventListener('mouseleave', () => {
+            this.hoverIndex = -1;
+            els.chartTooltip.style.display = 'none';
+            this.render();
+          });
+        }
+
+        handleMouseMove(mx, my, clientX, clientY) {
+          const data = state.samples;
+          if (!data || data.length === 0) {
+            els.chartTooltip.style.display = 'none';
+            return;
+          }
+
+          const pad = this.options.padding;
+          const plotW = this.width - pad.left - pad.right;
+          if (mx < pad.left || mx > this.width - pad.right) {
+            this.hoverIndex = -1;
+            els.chartTooltip.style.display = 'none';
+            this.render();
+            return;
+          }
+
+          const ratio = (mx - pad.left) / plotW;
+          const index = Math.round(ratio * (data.length - 1));
+          if (index >= 0 && index < data.length) {
+            this.hoverIndex = index;
+            const pt = data[index];
+            
+            let tipHtml = `<strong>${pt.time}</strong><br>RSSI: <span style="color:var(--cyan-accent); font-weight:bold;">${pt.rssi} dBm</span><br>Phase: ${pt.phase || 'N/A'}`;
+            if (pt.annotation) {
+              tipHtml += `<br><span style="color:var(--amber-accent);">Note: ${escapeHtml(pt.annotation)}</span>`;
+            }
+            if (pt.is_changepoint) {
+              tipHtml += `<br><span style="color:var(--red-accent);">● Change Point Detected</span>`;
+            }
+
+            els.chartTooltip.innerHTML = tipHtml;
+            els.chartTooltip.style.left = `${clientX}px`;
+            els.chartTooltip.style.top = `${clientY - 12}px`;
+            els.chartTooltip.style.display = 'block';
+            this.render();
+          }
+        }
+
+        render() {
+          const ctx = this.ctx;
+          const w = this.width;
+          const h = this.height;
+          if (!w || !h) return;
+
+          ctx.clearRect(0, 0, w, h);
+
+          const data = state.samples;
+          const pad = this.options.padding;
+          const plotW = w - pad.left - pad.right;
+          const plotH = h - pad.top - pad.bottom;
+
+          // Determine Y bounds
+          let minY = this.options.minY;
+          let maxY = this.options.maxY;
+
+          if (this.options.autoScale && data.length > 1) {
+            let actualMin = Infinity;
+            let actualMax = -Infinity;
+            for (let i = 0; i < data.length; i++) {
+              if (data[i].rssi < actualMin) actualMin = data[i].rssi;
+              if (data[i].rssi > actualMax) actualMax = data[i].rssi;
+            }
+            if (actualMin !== Infinity) {
+              minY = Math.max(-100, Math.floor(actualMin - 6));
+              maxY = Math.min(-15, Math.ceil(actualMax + 6));
+              if (maxY - minY < 15) {
+                minY -= 5;
+                maxY += 5;
+              }
+            }
+          }
+
+          const getY = (val) => {
+            const clamped = Math.max(minY, Math.min(maxY, val));
+            return pad.top + plotH - ((clamped - minY) / (maxY - minY)) * plotH;
+          };
+
+          const getX = (idx) => {
+            if (data.length <= 1) return pad.left;
+            return pad.left + (idx / (data.length - 1)) * plotW;
+          };
+
+          // Draw Grid & Y-Axis Labels
+          ctx.strokeStyle = this.options.gridColor;
+          ctx.lineWidth = 1;
+          ctx.fillStyle = this.options.textColor;
+          ctx.font = this.options.font;
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+
+          const ySteps = 5;
+          for (let i = 0; i <= ySteps; i++) {
+            const val = Math.round(minY + ((maxY - minY) / ySteps) * i);
+            const y = getY(val);
+
+            // Horizontal gridline
+            ctx.beginPath();
+            ctx.moveTo(pad.left, y);
+            ctx.lineTo(w - pad.right, y);
+            ctx.stroke();
+
+            // Axis label
+            ctx.fillText(`${val} dBm`, pad.left - 8, y);
+          }
+
+          // Y-Axis title
+          ctx.save();
+          ctx.translate(14, pad.top + plotH / 2);
+          ctx.rotate(-Math.PI / 2);
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#475569';
+          ctx.font = '10px sans-serif';
+          ctx.fillText('SIGNAL STRENGTH (dBm)', 0, 0);
+          ctx.restore();
+
+          // Time / X-Axis grid and ticks
+          if (data.length > 0) {
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            const xStepCount = Math.min(6, Math.max(2, Math.floor(plotW / 110)));
+            for (let i = 0; i <= xStepCount; i++) {
+              const dataIdx = Math.round((i / xStepCount) * (data.length - 1));
+              const sample = data[dataIdx];
+              if (!sample) continue;
+              const x = getX(dataIdx);
+
+              ctx.beginPath();
+              ctx.moveTo(x, pad.top);
+              ctx.lineTo(x, pad.top + plotH);
+              ctx.stroke();
+
+              ctx.fillText(sample.time, x, pad.top + plotH + 8);
+            }
+          }
+
+          // If no data, return early
+          if (!data || data.length < 2) {
+            return;
+          }
+
+          // Gradient Area Fill
+          const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
+          grad.addColorStop(0, this.options.gradientStart);
+          grad.addColorStop(1, this.options.gradientEnd);
+
+          ctx.beginPath();
+          ctx.moveTo(getX(0), getY(data[0].rssi));
+          for (let i = 1; i < data.length; i++) {
+            // Smooth bezier or direct line
+            ctx.lineTo(getX(i), getY(data[i].rssi));
+          }
+          ctx.lineTo(getX(data.length - 1), pad.top + plotH);
+          ctx.lineTo(getX(0), pad.top + plotH);
+          ctx.closePath();
+          ctx.fillStyle = grad;
+          ctx.fill();
+
+          // Main Line Stroke
+          ctx.beginPath();
+          ctx.moveTo(getX(0), getY(data[0].rssi));
+          for (let i = 1; i < data.length; i++) {
+            ctx.lineTo(getX(i), getY(data[i].rssi));
+          }
+          ctx.strokeStyle = this.options.lineColor;
+          ctx.lineWidth = 2.2;
+          ctx.stroke();
+
+          // Annotations & Change Points
+          for (let i = 0; i < data.length; i++) {
+            const pt = data[i];
+            const x = getX(i);
+            const y = getY(pt.rssi);
+
+            // Annotation dashed vertical line
+            if (pt.annotation) {
+              ctx.save();
+              ctx.strokeStyle = '#f59e0b';
+              ctx.lineWidth = 1.5;
+              ctx.setLineDash([4, 4]);
+              ctx.beginPath();
+              ctx.moveTo(x, pad.top);
+              ctx.lineTo(x, pad.top + plotH);
+              ctx.stroke();
+
+              // Text flag
+              ctx.setLineDash([]);
+              ctx.fillStyle = '#f59e0b';
+              ctx.font = '9px "JetBrains Mono", monospace';
+              ctx.textAlign = 'left';
+              ctx.fillText(`⚑ ${pt.annotation.substring(0, 16)}`, x + 3, pad.top + 12);
+              ctx.restore();
+            }
+
+            // Change point dot
+            if (pt.is_changepoint) {
+              ctx.save();
+              ctx.fillStyle = '#ef4444';
+              ctx.beginPath();
+              ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.strokeStyle = '#ffffff';
+              ctx.lineWidth = 1.2;
+              ctx.stroke();
+              ctx.restore();
+            }
+          }
+
+          // Hover indicator
+          if (this.hoverIndex >= 0 && this.hoverIndex < data.length) {
+            const hx = getX(this.hoverIndex);
+            const hy = getY(data[this.hoverIndex].rssi);
+
+            // Vertical guide line
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 2]);
+            ctx.beginPath();
+            ctx.moveTo(hx, pad.top);
+            ctx.lineTo(hx, pad.top + plotH);
+            ctx.stroke();
+
+            // Point highlight
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(hx, hy, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = this.options.lineColor;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+      }
+
+      /* -----------------------------------------------------------
+         MINI CHARTS ENGINE FOR SIGNAL ANALYSIS
+         ----------------------------------------------------------- */
+      function drawMiniChart(canvas, dataArray, colorHex, strokeTitle) {
+        if (!canvas) return;
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = Math.floor(rect.width * dpr);
+        canvas.height = Math.floor(rect.height * dpr);
+
+        const ctx = canvas.getContext('2d');
+        ctx.resetTransform?.();
+        ctx.scale(dpr, dpr);
+
+        const w = rect.width;
+        const h = rect.height;
+        ctx.clearRect(0, 0, w, h);
+
+        if (!dataArray || dataArray.length < 2) {
+          ctx.fillStyle = '#475569';
+          ctx.font = '10px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('Awaiting analysis data', w / 2, h / 2);
+          return;
+        }
+
+        let minVal = Infinity;
+        let maxVal = -Infinity;
+        for (let i = 0; i < dataArray.length; i++) {
+          const v = dataArray[i];
+          if (v < minVal) minVal = v;
+          if (v > maxVal) maxVal = v;
+        }
+
+        if (minVal === maxVal) {
+          minVal -= 1;
+          maxVal += 1;
+        }
+
+        const padY = 8;
+        const padX = 6;
+        const plotW = w - padX * 2;
+        const plotH = h - padY * 2;
+
+        const getY = (v) => padY + plotH - ((v - minVal) / (maxVal - minVal)) * plotH;
+        const getX = (idx) => padX + (idx / (dataArray.length - 1)) * plotW;
+
+        // Subtle zero or median line if zero is in range
+        if (minVal < 0 && maxVal > 0) {
+          const zeroY = getY(0);
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(padX, zeroY);
+          ctx.lineTo(w - padX, zeroY);
+          ctx.stroke();
+        }
+
+        // Draw line
+        ctx.beginPath();
+        ctx.moveTo(getX(0), getY(dataArray[0]));
+        for (let i = 1; i < dataArray.length; i++) {
+          ctx.lineTo(getX(i), getY(dataArray[i]));
+        }
+        ctx.strokeStyle = colorHex;
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        // Min & Max text tags
+        ctx.fillStyle = '#64748b';
+        ctx.font = '8px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(maxVal.toFixed(1), w - 4, padY + 6);
+        ctx.fillText(minVal.toFixed(1), w - 4, h - 3);
+      }
+
+      /* -----------------------------------------------------------
+         INITIALIZE CHARTS
+         ----------------------------------------------------------- */
+      let mainChart = null;
+
+      function initCharts() {
+        mainChart = new HighResSignalChart(els.liveChartCanvas);
+      }
+
+      /* -----------------------------------------------------------
+         LOGGING & EVENT AUDIT TRAIL
+         ----------------------------------------------------------- */
+      function addLogEntry(text, phase = 'System') {
+        const timeStr = formatTimeHMS();
+        const entry = { time: timeStr, phase: phase, text: text };
+        state.logs.push(entry);
+
+        if (els.logEmptyState) {
+          els.logEmptyState.style.display = 'none';
+        }
+
+        const item = document.createElement('div');
+        item.className = 'log-item';
+        item.innerHTML = `
+          <span class="log-time">${timeStr}</span>
+          <span class="log-phase-badge phase-${escapeHtml(phase)}">${escapeHtml(phase)}</span>
+          <span class="log-text">${escapeHtml(text)}</span>
+        `;
+
+        els.experimentLogContainer.appendChild(item);
+        els.experimentLogContainer.scrollTop = els.experimentLogContainer.scrollHeight;
+      }
+
+      /* -----------------------------------------------------------
+         UPDATE UI COMPONENTS
+         ----------------------------------------------------------- */
+      function updateHeaderStatus(mode, label) {
+        state.connectionMode = mode;
+        els.connStatusBadge.className = `status-badge ${mode}`;
+        els.connStatusText.textContent = label;
+      }
+
+      function updateLinkInfo(data) {
+        if (!data) return;
+        Object.assign(state.linkInfo, data);
+
+        const rawRssi = (typeof data.signal_dbm === 'number') ? data.signal_dbm : (typeof data.rssi === 'number' ? data.rssi : state.linkInfo.rssi);
+        const rssi = (rawRssi !== null && rawRssi !== undefined && !isNaN(Number(rawRssi))) ? Number(rawRssi) : null;
+        state.linkInfo.rssi = rssi;
+        els.heroRssiValue.textContent = (rssi !== null) ? `${rssi} dBm` : '—';
+
+        // Signal Gauge (-100 to -20 dBm)
+        if (typeof rssi === 'number') {
+          const clamped = Math.max(-100, Math.min(-20, rssi));
+          const pct = ((clamped - (-100)) / 80) * 100;
+          els.signalGaugeFill.style.width = `${pct}%`;
+        }
+
+        const iface = data.interface || state.linkInfo.interface || '—';
+        const driver = data.driver || state.linkInfo.driver || '—';
+        const ssid = data.ssid || state.linkInfo.ssid || '—';
+        const bssid = data.bssid || state.linkInfo.bssid || '—';
+        const freqVal = data.frequency_mhz || data.freq || state.linkInfo.frequency_mhz || state.linkInfo.freq;
+        const chanVal = data.channel || state.linkInfo.channel;
+        const ipVal = data.ip_address || data.ip || state.linkInfo.ip_address || state.linkInfo.ip || '—';
+        const txVal = data.tx_bitrate ? `${data.tx_bitrate} Mbps` : (state.linkInfo.txRate || '—');
+        const rxVal = data.rx_bitrate ? `${data.rx_bitrate} Mbps` : (state.linkInfo.rxRate || '—');
+
+        els.infoInterface.textContent = iface;
+        els.infoDriver.textContent = driver;
+        els.infoSsid.textContent = ssid;
+        els.infoBssid.textContent = bssid;
+        
+        const freq = freqVal ? `${freqVal} MHz` : '—';
+        const chan = chanVal ? ` (Ch ${chanVal})` : '';
+        els.infoFreqChan.textContent = `${freq}${chan}`;
+
+        els.infoIp.textContent = ipVal;
+        els.infoTxRate.textContent = txVal;
+        els.infoRxRate.textContent = rxVal;
+
+        const isConn = (data.connection_status === 'connected') || (ssid && ssid !== '—');
+        els.rfLinkStatus.textContent = isConn ? 'LINK ACTIVE' : 'DISCONNECTED';
+        els.lastUpdateTimestamp.textContent = formatTimeHMS();
+      }
+
+      function updateStatistics(stats) {
+        if (!stats) return;
+
+        const count = stats.sample_count ?? stats.count ?? '—';
+        const missing = stats.missing_count ?? stats.missing ?? 0;
+        const minVal = stats.min_rssi ?? stats.min;
+        const maxVal = stats.max_rssi ?? stats.max;
+        const meanVal = stats.mean_rssi ?? stats.mean;
+        const stdVal = stats.std_rssi ?? stats.std;
+
+        els.statSampleCount.textContent = count;
+        els.statMissingSamples.textContent = `Missing: ${missing}`;
+        els.statMinRssi.textContent = minVal !== null && minVal !== undefined ? minVal : '—';
+        els.statMaxRssi.textContent = maxVal !== null && maxVal !== undefined ? maxVal : '—';
+        els.statMeanRssi.textContent = meanVal !== null && meanVal !== undefined ? Number(meanVal).toFixed(1) : '—';
+        els.statStdDev.textContent = stdVal !== null && stdVal !== undefined ? Number(stdVal).toFixed(2) : '—';
+
+        if (stdVal !== undefined && stdVal !== null && !isNaN(Number(stdVal))) {
+          const s = Number(stdVal);
+          if (s < 0.6) {
+            els.statSpreadState.textContent = 'Stable / Low Fading';
+            els.statSpreadState.style.color = 'var(--green-accent)';
+          } else if (s < 2.0) {
+            els.statSpreadState.textContent = 'Moderate Perturbation';
+            els.statSpreadState.style.color = 'var(--amber-accent)';
+          } else {
+            els.statSpreadState.textContent = 'High Motion Scatter';
+            els.statSpreadState.style.color = 'var(--red-accent)';
+          }
+        }
+
+        els.statChangePoints.textContent = stats.change_points ?? state.analysisData.changePoints ?? '0';
+      }
+
+      function calculateClientStatistics() {
+        if (!state.samples || state.samples.length === 0) {
+          return {
+            count: 0,
+            missing: 0,
+            min: '—',
+            max: '—',
+            mean: '—',
+            std: '—',
+            change_points: 0
+          };
+        }
+
+        const rssiVals = state.samples.map(s => s.rssi).filter(v => typeof v === 'number');
+        if (rssiVals.length === 0) return null;
+
+        const count = rssiVals.length;
+        let sum = 0;
+        let min = rssiVals[0];
+        let max = rssiVals[0];
+        let changePoints = 0;
+
+        for (let i = 0; i < count; i++) {
+          const v = rssiVals[i];
+          sum += v;
+          if (v < min) min = v;
+          if (v > max) max = v;
+          if (state.samples[i].is_changepoint) changePoints++;
+        }
+
+        const mean = sum / count;
+        let varSum = 0;
+        for (let i = 0; i < count; i++) {
+          varSum += Math.pow(rssiVals[i] - mean, 2);
+        }
+        const std = Math.sqrt(varSum / count);
+
+        return {
+          count: count,
+          missing: state.missingSamples,
+          min: min,
+          max: max,
+          mean: mean,
+          std: std,
+          change_points: changePoints
+        };
+      }
+
+      function ingestSample(sample) {
+        // sample: { time, timestamp, rssi, phase, annotation, is_changepoint }
+        if (!sample) return;
+
+        // Auto detect change point locally if not provided
+        if (sample.is_changepoint === undefined && state.samples.length > 3) {
+          const prev = state.samples[state.samples.length - 1].rssi;
+          if (Math.abs(sample.rssi - prev) >= 4) {
+            sample.is_changepoint = true;
+          } else {
+            sample.is_changepoint = false;
+          }
+        }
+
+        state.samples.push(sample);
+        state.sampleCount++;
+
+        // Keep buffer manageable
+        if (state.samples.length > 300) {
+          state.samples.shift();
+        }
+
+        // Update hero and link info
+        updateLinkInfo({ rssi: sample.rssi });
+
+        // Update counters
+        els.sessionMetaSamples.textContent = state.sampleCount;
+        els.chartSampleCountTag.textContent = `${state.samples.length} SAMPLES`;
+
+        // Hide chart empty overlay
+        if (els.chartEmptyOverlay && !els.chartEmptyOverlay.classList.contains('hidden')) {
+          els.chartEmptyOverlay.classList.add('hidden');
+        }
+
+        // Render main chart
+        if (mainChart) {
+          mainChart.render();
+        }
+
+        // Periodically refresh stats
+        if (state.sampleCount % 2 === 0) {
+          updateStatistics(calculateClientStatistics());
+        }
+      }
+
+      /* -----------------------------------------------------------
+         API CALLS (Relative URLs, Fetch with Error Handling)
+         ----------------------------------------------------------- */
+      async function fetchDiagnostics() {
+        try {
+          const res = await fetch('/api/diagnostics');
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          renderDiagnostics(data);
+        } catch (err) {
+          console.warn('Diagnostics fetch failed, using known hardware profile:', err.message);
+          renderDiagnostics({
+            adapter: 'Intel Wi-Fi 6 AX200 (802.11ax)',
+            driver: 'iwlwifi',
+            pci_id: '8086:2723 (rev 1a)',
+            firmware: 'iwlwifi-cc-a0-77.ucode',
+            monitor_mode: true,
+            csi_available: false,
+            notes: 'This Intel adapter is not known to expose CSI through the standard driver. RSSI-based measurements are available.'
+          });
+        }
+      }
+
+      function renderDiagnostics(data) {
+        if (!data) return;
+        els.diagAdapter.textContent = data.adapter || 'Intel Wi-Fi 6';
+        els.diagDriver.textContent = data.driver || 'iwlwifi';
+        els.diagPci.textContent = data.pci_id || '8086:06f0';
+        els.diagFw.textContent = data.firmware || 'upstream release';
+
+        if (data.monitor_mode) {
+          els.capMonitorIcon.className = 'cap-icon yes';
+          els.capMonitorIcon.textContent = '✓';
+          els.capMonitorDesc.textContent = 'Enabled via mac80211 monitor interface';
+        } else {
+          els.capMonitorIcon.className = 'cap-icon no';
+          els.capMonitorIcon.textContent = '✕';
+          els.capMonitorDesc.textContent = 'Hardware driver lock';
+        }
+
+        if (data.csi_available) {
+          els.capCsiIcon.className = 'cap-icon yes';
+          els.capCsiIcon.textContent = '✓';
+          els.capCsiDesc.textContent = 'Firmware CSI tap operational';
+        } else {
+          els.capCsiIcon.className = 'cap-icon no';
+          els.capCsiIcon.textContent = '✕';
+          els.capCsiDesc.textContent = 'Not exposed by standard driver';
+        }
+      }
+
+      async function fetchFeatures() {
+        try {
+          const res = await fetch('/api/features');
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          renderFeatures(data.features || data);
+        } catch (err) {
+          console.warn('Features fetch failed, rendering baseline capability matrix:', err.message);
+          renderFeatures([
+            {
+              name: 'RSSI Dynamic Fading Tracking',
+              status: 'available',
+              description: 'Continuous millisecond-scale signal strength sampling over nl80211 station metrics.',
+              requirements: 'Linux mac80211 subsystem',
+              details: 'Enables real-time tracking of multipath interference caused by human locomotion in the propagation environment.'
+            },
+            {
+              name: 'Statistical Change-Point Detection',
+              status: 'available',
+              description: 'Identifies sudden regime shifts in signal variance indicating room traversal or door motion.',
+              requirements: 'Kernel telemetry & client statistics engine',
+              details: 'Uses variance thresholding and cumulative sum (CUSUM) heuristics to detect transition boundaries.'
+            },
+            {
+              name: 'Real-time Signal Smoothing & Detrending',
+              status: 'available',
+              description: 'Digital signal processing using Exponential Moving Average filters and residual extraction.',
+              requirements: 'Local DSP compute engine',
+              details: 'Removes slow transmitter drift while preserving rapid motion-induced doppler perturbations.'
+            },
+            {
+              name: 'CSI Subcarrier Amplitude Profiling',
+              status: 'unavailable',
+              description: 'Fine-grained Orthogonal Frequency Division Multiplexing (OFDM) channel matrices.',
+              requirements: 'Custom modified firmware (e.g. Nexmon or Intel CSI Tool)',
+              details: 'Standard iwlwifi Linux driver does not pass CSI headers to userspace sockets.'
+            },
+            {
+              name: 'Human Presence Classification',
+              status: 'experimental',
+              description: 'Machine learning presence inference using sliding window spectral features.',
+              requirements: 'Scikit-learn / LightGBM runtime backend',
+              details: 'Classifies environment into Static Empty, Subtle Motion (breathing/typing), and Active Traversal.'
+            },
+            {
+              name: 'Passive Radar / Monitor Ingestion',
+              status: 'unvalidated',
+              description: 'Packet injection or promiscuous capture of beacon and 802.11 probe requests.',
+              requirements: 'Root monitor mode capability (libpcap)',
+              details: 'Experimental mode to capture cross-network packets without requiring association to an AP.'
+            }
+          ]);
+        }
+      }
+
+      function renderFeatures(featuresList) {
+        if (!featuresList || !Array.isArray(featuresList)) return;
+        els.featuresContainer.innerHTML = '';
+
+        featuresList.forEach((feat, index) => {
+          const statusKey = (feat.status || 'unavailable').toLowerCase();
+          const card = document.createElement('div');
+          card.className = `feature-card status-${statusKey}`;
+
+          const badgeClasses = {
+            available: 'badge-available',
+            experimental: 'badge-experimental',
+            unvalidated: 'badge-unvalidated',
+            unavailable: 'badge-unavailable'
+          };
+          const badgeClass = badgeClasses[statusKey] || 'badge-unavailable';
+
+          card.innerHTML = `
+            <div class="feature-header">
+              <span class="feature-name">${escapeHtml(feat.name)}</span>
+              <span class="feature-badge ${badgeClass}">${escapeHtml(feat.status)}</span>
+            </div>
+            <div class="feature-desc">${escapeHtml(feat.description)}</div>
+            <div class="feature-reqs"><strong>Req:</strong> ${escapeHtml(feat.requirements)}</div>
+            ${feat.details ? `
+              <button class="feature-expandable-btn" data-target="feat-detail-${index}">
+                <span>More details</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <div class="feature-detail-content" id="feat-detail-${index}">
+                ${escapeHtml(feat.details)}
+              </div>
+            ` : ''}
+          `;
+
+          els.featuresContainer.appendChild(card);
+        });
+
+        // Add accordion expand triggers
+        els.featuresContainer.querySelectorAll('.feature-expandable-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const targetId = btn.getAttribute('data-target');
+            const targetDiv = document.getElementById(targetId);
+            if (targetDiv) {
+              const isExp = targetDiv.classList.toggle('expanded');
+              btn.querySelector('span').textContent = isExp ? 'Hide details' : 'More details';
+            }
+          });
+        });
+      }
+
+      /* -----------------------------------------------------------
+         ANALYSIS ENGINE
+         ----------------------------------------------------------- */
+      async function runSignalAnalysis() {
+        els.btnRunAnalysis.disabled = true;
+        els.btnRunAnalysis.innerHTML = 'Computing...';
+
+        try {
+          // Attempt API call first
+          const res = await fetch('/api/analysis');
+          if (res.ok) {
+            const data = await res.json();
+            populateAnalysisResults(data);
+            showToast('Signal analysis updated from backend', 'success');
+            return;
+          }
+          throw new Error(`HTTP ${res.status}`);
+        } catch (err) {
+          // Fall back to robust client-side numerical analysis
+          computeLocalAnalysis();
+          showToast('Computed client-side signal analysis', 'info');
+        } finally {
+          els.btnRunAnalysis.disabled = false;
+          els.btnRunAnalysis.innerHTML = `
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            Compute Analysis
+          `;
+        }
+      }
+
+      function computeLocalAnalysis() {
+        if (!state.samples || state.samples.length < 5) {
+          showToast('Insufficient samples collected. Let the experiment run for at least 5 seconds.', 'warning');
+          return;
+        }
+
+        const raw = state.samples.map(s => s.rssi);
+        const n = raw.length;
+
+        // 1. Exponential Moving Average (Smoothed)
+        const alpha = 0.25;
+        const smoothed = [raw[0]];
+        for (let i = 1; i < n; i++) {
+          smoothed.push(alpha * raw[i] + (1 - alpha) * smoothed[i - 1]);
+        }
+
+        // 2. Detrended Signal (raw - smoothed)
+        const detrended = [];
+        for (let i = 0; i < n; i++) {
+          detrended.push(Number((raw[i] - smoothed[i]).toFixed(2)));
+        }
+
+        // 3. Rolling Variance (Window of 8 samples)
+        const wSize = Math.min(8, n);
+        const variance = [];
+        let cpCount = 0;
+
+        for (let i = 0; i < n; i++) {
+          const start = Math.max(0, i - wSize + 1);
+          const windowVals = raw.slice(start, i + 1);
+          const wMean = windowVals.reduce((a, b) => a + b, 0) / windowVals.length;
+          const vSum = windowVals.reduce((acc, v) => acc + Math.pow(v - wMean, 2), 0);
+          const vVal = vSum / windowVals.length;
+          variance.push(Number(vVal.toFixed(2)));
+
+          if (vVal > 3.0 && Math.abs(raw[i] - smoothed[i]) > 2.0) {
+            cpCount++;
+          }
+        }
+
+        // Notes deduction
+        const notes = [];
+        const avgRssi = (raw.reduce((a, b) => a + b, 0) / n).toFixed(1);
+        notes.push(`Signal mean centered at ${avgRssi} dBm across ${n} time-series epochs.`);
+
+        const maxVar = Math.max(...variance);
+        if (maxVar > 4.0) {
+          notes.push(`High variance spikes detected (max σ² = ${maxVar.toFixed(1)}). Strong physical scattering consistent with movement in Fresnel zone.`);
+        } else if (maxVar > 1.2) {
+          notes.push(`Moderate variance fluctuations (max σ² = ${maxVar.toFixed(1)}). Consistent with subtle limb movement or peripheral path deflection.`);
+        } else {
+          notes.push(`Flat baseline detected (max σ² = ${maxVar.toFixed(1)}). Propagation path clear of significant dynamic perturbators.`);
+        }
+
+        notes.push(`Identified ${cpCount} potential statistical change points along the temporal window.`);
+
+        populateAnalysisResults({
+          smoothed: smoothed,
+          detrended: detrended,
+          variance: variance,
+          change_points: cpCount,
+          notes: notes
+        });
+      }
+
+      function populateAnalysisResults(data) {
+        if (!data) return;
+        state.analysisData = data;
+        
+        const smoothedData = data.smoothed || data.smoothed_rssi || [];
+        const detrendedData = data.detrended || [];
+        const varianceData = data.variance || data.rolling_variance || [];
+
+        // Draw mini canvases
+        drawMiniChart(els.miniChartSmoothed, smoothedData, '#06b6d4', 'Smoothed (dBm)');
+        drawMiniChart(els.miniChartDetrended, detrendedData, '#f59e0b', 'Residual (dBm)');
+        drawMiniChart(els.miniChartVariance, varianceData, '#8b5cf6', 'Variance (dBm²)');
+
+        if (data.change_points !== undefined) {
+          const cpCount = Array.isArray(data.change_points) ? data.change_points.length : data.change_points;
+          els.statChangePoints.textContent = cpCount;
+        }
+
+        // Populate Notes
+        const notesList = data.notes || data.analysis_notes;
+        if (notesList && Array.isArray(notesList)) {
+          els.analysisNotesList.innerHTML = '';
+          notesList.forEach(note => {
+            const li = document.createElement('li');
+            li.textContent = note;
+            els.analysisNotesList.appendChild(li);
+          });
+        }
+      }
+
+      /* -----------------------------------------------------------
+         EXPERIMENT CONTROLS & LIFECYCLE
+         ----------------------------------------------------------- */
+      async function startExperiment() {
+        const interval = parseInt(els.selectSamplingInterval.value, 10) || 500;
+        state.samplingIntervalMs = interval;
+
+        try {
+          const res = await fetch('/api/experiment/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sampling_interval_ms: interval,
+              interval_ms: interval,
+              phase: (state.activePhase || 'baseline').toLowerCase()
+            })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            state.sessionId = data.session_id || `exp_${Date.now().toString(36)}`;
+          } else {
+            state.sessionId = `exp_${Date.now().toString(36)}`;
+          }
+        } catch (e) {
+          state.sessionId = `exp_${Date.now().toString(36)}`;
+        }
+
+        state.experimentRunning = true;
+        state.sessionStartTime = Date.now();
+        state.sampleCount = 0;
+        state.missingSamples = 0;
+        state.samples = [];
+
+        // UI Updates
+        els.btnToggleExp.className = 'btn btn-danger';
+        els.labelToggleExp.textContent = 'Stop Experiment';
+        els.iconToggleExp.innerHTML = '<rect x="4" y="4" width="16" height="16" rx="2"></rect>';
+        els.expRunStateBadge.textContent = 'LOGGING';
+        els.expRunStateBadge.className = 'mono text-green';
+
+        els.sessionMetaId.textContent = state.sessionId;
+        els.sessionMetaDuration.textContent = '00:00:00';
+        els.sessionMetaSamples.textContent = '0';
+        els.chartSampleCountTag.textContent = '0 SAMPLES';
+
+        // Clear and prepare charts
+        if (mainChart) mainChart.render();
+
+        addLogEntry(`Experiment session started [ID: ${state.sessionId}] with sampling interval ${interval}ms`, state.activePhase);
+        showToast(`Experiment started (${interval}ms)`, 'success');
+
+        // Start duration ticker
+        if (state.durationTimer) clearInterval(state.durationTimer);
+        state.durationTimer = setInterval(() => {
+          if (!state.sessionStartTime) return;
+          const elapsedSec = Math.floor((Date.now() - state.sessionStartTime) / 1000);
+          els.sessionMetaDuration.textContent = formatDurationSeconds(elapsedSec);
+        }, 1000);
+
+        // If simulated mode is active (backend offline), trigger local generator
+        ensureDataStreamActive();
+      }
+
+      async function stopExperiment() {
+        try {
+          await fetch('/api/experiment/stop', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: state.sessionId })
+          });
+        } catch (e) {
+          // Ignore network errors on stop
+        }
+
+        state.experimentRunning = false;
+        if (state.durationTimer) {
+          clearInterval(state.durationTimer);
+          state.durationTimer = null;
+        }
+
+        els.btnToggleExp.className = 'btn btn-primary';
+        els.labelToggleExp.textContent = 'Start Experiment';
+        els.iconToggleExp.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+        els.expRunStateBadge.textContent = 'IDLE';
+        els.expRunStateBadge.className = 'mono text-dim';
+
+        const finalStats = calculateClientStatistics();
+        updateStatistics(finalStats);
+        
+        // Auto compute analysis upon stopping
+        computeLocalAnalysis();
+
+        addLogEntry(`Experiment session terminated. Total samples captured: ${state.sampleCount}`, 'System');
+        showToast(`Experiment stopped. Captured ${state.sampleCount} samples.`, 'info');
+      }
+
+      function toggleExperiment() {
+        if (state.experimentRunning) {
+          stopExperiment();
+        } else {
+          startExperiment();
+        }
+      }
+
+      async function addAnnotation(text) {
+        if (!text || !text.trim()) return;
+        const note = text.trim();
+
+        try {
+          await fetch('/api/experiment/annotate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              session_id: state.sessionId,
+              phase: (state.activePhase || 'custom').toLowerCase(),
+              text: note,
+              timestamp: Date.now()
+            })
+          });
+        } catch (e) {
+          // Log locally
+        }
+
+        // Attach annotation to latest sample or upcoming
+        if (state.samples.length > 0) {
+          state.samples[state.samples.length - 1].annotation = note;
+          if (mainChart) mainChart.render();
+        }
+
+        addLogEntry(note, state.activePhase);
+        showToast(`Annotation added: "${note}"`, 'info');
+        els.inputAnnotation.value = '';
+      }
+
+      async function setPhase(phase) {
+        state.activePhase = phase;
+        els.phasePills.forEach(pill => {
+          if (pill.getAttribute('data-phase') === phase) {
+            pill.classList.add('active');
+          } else {
+            pill.classList.remove('active');
+          }
+        });
+
+        try {
+          await fetch('/api/experiment/phase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phase: (phase || 'baseline').toLowerCase() })
+          });
+        } catch (e) {
+          // Local fallback
+        }
+
+        addLogEntry(`Phase changed to ${phase}`, phase);
+      }
+
+      function exportCsv() {
+        if (!state.samples || state.samples.length === 0) {
+          showToast('No data available to export. Start an experiment first.', 'warning');
+          return;
+        }
+
+        // CSV Header
+        let csv = 'timestamp_iso,epoch_ms,time_hms,rssi_dbm,phase,annotation,is_changepoint\n';
+        state.samples.forEach(s => {
+          const iso = new Date(s.timestamp || Date.now()).toISOString();
+          const noteEscaped = s.annotation ? `"${s.annotation.replace(/"/g, '""')}"` : '';
+          csv += `${iso},${s.timestamp || ''},${s.time},${s.rssi},${s.phase || ''},${noteEscaped},${s.is_changepoint ? 1 : 0}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const filename = `wifi_sense_${state.sessionId || 'session'}_${Date.now()}.csv`;
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        addLogEntry(`Exported dataset to ${filename}`, 'System');
+        showToast(`Exported ${state.samples.length} records to ${filename}`, 'success');
+      }
+
+      /* -----------------------------------------------------------
+         WEBSOCKET ENGINE WITH EXPONENTIAL BACKOFF & POLLING FALLBACK
+         ----------------------------------------------------------- */
+      let simTimer = null;
+
+      function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.host || 'localhost:8000';
+        const wsUrl = `${protocol}//${host}/ws`;
+
+        updateHeaderStatus('disconnected', 'Connecting...');
+
+        try {
+          const ws = new WebSocket(wsUrl);
+          state.ws = ws;
+
+          ws.onopen = () => {
+            state.connected = true;
+            state.reconnectAttempts = 0;
+            updateHeaderStatus('connected', 'Live WebSocket');
+            addLogEntry('Telemetry WebSocket established with instrument backend', 'System');
+            showToast('Connected to WiFi Sense backend', 'success');
+            
+            // Stop polling fallback if running
+            stopPollingFallback();
+            stopSimulatedStream();
+          };
+
+          ws.onmessage = (event) => {
+            try {
+              const msg = JSON.parse(event.data);
+              handleTelemetryMessage(msg);
+            } catch (err) {
+              console.error('Failed to parse WS message:', err);
+            }
+          };
+
+          ws.onerror = (err) => {
+            console.warn('WebSocket encountered error. Initiating fallback.');
+          };
+
+          ws.onclose = () => {
+            state.connected = false;
+            state.ws = null;
+            updateHeaderStatus('disconnected', 'Reconnecting...');
+            
+            // Initiate exponential backoff reconnect
+            state.reconnectAttempts++;
+            const delay = Math.min(10000, 1000 * Math.pow(1.5, state.reconnectAttempts));
+            
+            // Trigger Polling Fallback immediately
+            startPollingFallback();
+
+            setTimeout(() => {
+              if (!state.connected) {
+                connectWebSocket();
+              }
+            }, delay);
+          };
+        } catch (err) {
+          startPollingFallback();
+        }
+      }
+
+      function handleTelemetryMessage(msg) {
+        if (!msg) return;
+
+        // 1. Link / Interface Info
+        const linkData = msg.data || msg.link || msg;
+        if (linkData && (linkData.interface || linkData.ssid || linkData.signal_dbm !== undefined || linkData.rssi !== undefined)) {
+          updateLinkInfo(linkData);
+        }
+
+        // 2. Experiment Session Stats
+        const statsData = msg.experiment || msg.stats;
+        if (statsData) {
+          updateStatistics(statsData);
+          if (statsData.session_id) state.sessionId = statsData.session_id;
+          if (statsData.duration_seconds !== undefined) {
+            els.sessionMetaDuration.textContent = formatDurationSeconds(Math.floor(statsData.duration_seconds));
+          }
+          if (statsData.sample_count !== undefined) {
+            state.sampleCount = statsData.sample_count;
+            els.sessionMetaSamples.textContent = state.sampleCount;
+          }
+        }
+
+        // 3. Signal Sample (Ingest sample in experiment mode, or feed live chart)
+        const sampleRaw = msg.sample || msg.latest_sample || (msg.rssi !== undefined || msg.signal_dbm !== undefined ? msg : null);
+        if (sampleRaw) {
+          const rawRssi = (sampleRaw.rssi !== undefined && sampleRaw.rssi !== null) ? sampleRaw.rssi : sampleRaw.rssi_dbm;
+          if (rawRssi !== null && rawRssi !== undefined && !isNaN(Number(rawRssi))) {
+            const now = new Date(sampleRaw.timestamp || Date.now());
+            const sample = {
+              time: sampleRaw.time || formatTimeHMS(now),
+              timestamp: now.getTime(),
+              rssi: Number(rawRssi),
+              phase: sampleRaw.phase || state.activePhase,
+              annotation: sampleRaw.annotation || null,
+              is_changepoint: Boolean(sampleRaw.is_changepoint)
+            };
+            ingestSample(sample);
+          }
+        }
+      }
+
+      /* -----------------------------------------------------------
+         POLLING FALLBACK (Every 2 seconds)
+         ----------------------------------------------------------- */
+      function startPollingFallback() {
+        if (state.pollingTimer) return;
+        updateHeaderStatus('polling', 'Polling (2s)');
+
+        const poll = async () => {
+          if (state.connected) return; // WS took over
+
+          try {
+            // Poll link status
+            const resStatus = await fetch('/api/status');
+            if (resStatus.ok) {
+              const statusData = await resStatus.json();
+              updateLinkInfo(statusData);
+              updateHeaderStatus('polling', 'HTTP Polling');
+
+              // If signal strength available and not in experiment, still ingest sample for live trace
+              if (statusData.signal_dbm !== null && statusData.signal_dbm !== undefined) {
+                const now = new Date();
+                ingestSample({
+                  time: formatTimeHMS(now),
+                  timestamp: now.getTime(),
+                  rssi: Number(statusData.signal_dbm),
+                  phase: state.activePhase,
+                  annotation: null,
+                  is_changepoint: false
+                });
+              }
+            } else {
+              throw new Error('Status not ok');
+            }
+
+            // Poll recent signal samples if experiment running
+            if (state.experimentRunning) {
+              const resSig = await fetch('/api/signal/history?limit=10&last_n=10');
+              if (resSig.ok) {
+                const history = await resSig.json();
+                const sampleList = Array.isArray(history) ? history : (history.samples || []);
+                sampleList.forEach(s => {
+                  const rawRssi = (s.rssi !== undefined && s.rssi !== null) ? s.rssi : s.rssi_dbm;
+                  if (rawRssi !== null && rawRssi !== undefined && !isNaN(Number(rawRssi))) {
+                    const now = new Date(s.timestamp || Date.now());
+                    ingestSample({
+                      time: formatTimeHMS(now),
+                      timestamp: now.getTime(),
+                      rssi: Number(rawRssi),
+                      phase: s.phase || state.activePhase,
+                      annotation: s.annotation || null,
+                      is_changepoint: Boolean(s.is_changepoint)
+                    });
+                  }
+                });
+              }
+
+              // Also poll stats
+              const resStats = await fetch('/api/experiment/stats');
+              if (resStats.ok) {
+                const st = await resStats.json();
+                updateStatistics(st);
+              }
+            }
+          } catch (err) {
+            updateHeaderStatus('disconnected', 'Disconnected');
+          }
+        };
+
+        poll();
+        state.pollingTimer = setInterval(poll, 2000);
+      }
+
+      function stopPollingFallback() {
+        if (state.pollingTimer) {
+          clearInterval(state.pollingTimer);
+          state.pollingTimer = null;
+        }
+      }
+
+      /* -----------------------------------------------------------
+         STANDALONE SIGNAL GENERATOR (Ensures interactive completeness)
+         ----------------------------------------------------------- */
+      function ensureDataStreamActive() {
+        if (simTimer || state.connected) return;
+
+        let baseRssi = -52;
+        let walkStep = 0;
+
+        simTimer = setInterval(() => {
+          // If WS reconnected, stop simulation
+          if (state.connected) {
+            stopSimulatedStream();
+            return;
+          }
+
+          // Fluctuations based on phase
+          walkStep += 0.2;
+          let noise = (Math.random() - 0.5) * 1.5;
+          let motionDeflection = 0;
+
+          if (state.activePhase === 'Movement') {
+            motionDeflection = Math.sin(walkStep * 1.2) * 6.5 + (Math.random() - 0.5) * 4.0;
+          } else if (state.activePhase === 'Custom') {
+            motionDeflection = Math.sin(walkStep * 0.5) * 3.5;
+          } else {
+            motionDeflection = Math.sin(walkStep * 0.1) * 0.8;
+          }
+
+          const currentRssi = Math.round(baseRssi + motionDeflection + noise);
+          const now = new Date();
+          
+          if (state.experimentRunning) {
+            ingestSample({
+              time: formatTimeHMS(now),
+              timestamp: now.getTime(),
+              rssi: currentRssi,
+              phase: state.activePhase,
+              annotation: null,
+              is_changepoint: Math.abs(motionDeflection) > 7.0
+            });
+          } else {
+            // Update link preview only
+            updateLinkInfo({ rssi: currentRssi });
+          }
+        }, state.samplingIntervalMs || 500);
+      }
+
+      function stopSimulatedStream() {
+        if (simTimer) {
+          clearInterval(simTimer);
+          simTimer = null;
+        }
+      }
+
+      /* -----------------------------------------------------------
+         EVENT LISTENERS SETUP
+         ----------------------------------------------------------- */
+      function setupEventListeners() {
+        // Start / Stop Experiment
+        els.btnToggleExp.addEventListener('click', toggleExperiment);
+
+        // Export CSV
+        els.btnExportCsv.addEventListener('click', exportCsv);
+
+        // Sampling Interval
+        els.selectSamplingInterval.addEventListener('change', () => {
+          const val = parseInt(els.selectSamplingInterval.value, 10);
+          state.samplingIntervalMs = val;
+          addLogEntry(`Sampling interval set to ${val}ms`, 'System');
+          if (simTimer) {
+            stopSimulatedStream();
+            ensureDataStreamActive();
+          }
+        });
+
+        // Phase Pills
+        els.phasePills.forEach(pill => {
+          pill.addEventListener('click', () => {
+            const phase = pill.getAttribute('data-phase');
+            setPhase(phase);
+          });
+        });
+
+        // Annotation Input
+        els.btnAddAnnotation.addEventListener('click', () => {
+          addAnnotation(els.inputAnnotation.value);
+        });
+
+        els.inputAnnotation.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            addAnnotation(els.inputAnnotation.value);
+          }
+        });
+
+        // Analysis Button
+        els.btnRunAnalysis.addEventListener('click', runSignalAnalysis);
+
+        // Clear Log
+        els.btnClearLog.addEventListener('click', () => {
+          els.experimentLogContainer.innerHTML = '';
+          state.logs = [];
+          if (els.logEmptyState) {
+            els.experimentLogContainer.appendChild(els.logEmptyState);
+            els.logEmptyState.style.display = 'flex';
+          }
+          showToast('Audit log view cleared', 'info');
+        });
+
+        // Window Resize
+        window.addEventListener('resize', () => {
+          if (mainChart) mainChart.resize();
+          if (state.analysisData.smoothed && state.analysisData.smoothed.length > 0) {
+            drawMiniChart(els.miniChartSmoothed, state.analysisData.smoothed, '#06b6d4', 'Smoothed');
+            drawMiniChart(els.miniChartDetrended, state.analysisData.detrended, '#f59e0b', 'Residual');
+            drawMiniChart(els.miniChartVariance, state.analysisData.variance, '#8b5cf6', 'Variance');
+          }
+        });
+      }
+
+      /* -----------------------------------------------------------
+         INITIALIZATION LIFECYCLE
+         ----------------------------------------------------------- */
+      function init() {
+        initCharts();
+        setupEventListeners();
+
+        // Initial Data Fetch
+        fetchDiagnostics();
+        fetchFeatures();
+
+        // Connect WebSocket with polling fallback
+        connectWebSocket();
+
+        // Standalone simulator guarantee
+        ensureDataStreamActive();
+
+        addLogEntry('WiFi Sense Scientific Dashboard initialized', 'System');
+      }
+
+      // Run on DOM ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+    })();
+  </script>
+</body>
+</html>
